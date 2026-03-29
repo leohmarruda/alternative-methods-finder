@@ -1,8 +1,18 @@
-import requests
 import os
+from pathlib import Path
+
+import requests
+
+DEFAULT_MODEL = "openai/gpt-4o"
+
+_MOCK_OUTPUT_PATH = Path(__file__).resolve().parent / "mock_output.md"
 
 
-def open_router(prompt):
+def mock_response(_prompt: str) -> str:
+    return _MOCK_OUTPUT_PATH.read_text(encoding="utf-8")
+
+
+def open_router(prompt, model=DEFAULT_MODEL):
 
     contexto = """
     You are a specialized Bio-Informatics Assistant. Your task is to parse "Materials and Methods" sections from biomedical research papers and extract animal-based experimental protocols into a structured JSON format. You are an expert in the 3Rs (Replacement, Reduction, Refinement) and OECD Test Guidelines.
@@ -51,7 +61,7 @@ def open_router(prompt):
             "Authorization": f"Bearer {os.environ.get('API_KEY')}"
         },
         json={
-            "model": "openai/gpt-4o-mini",
+            "model": model,
             "messages": [
                 {
                     "role": "system",
