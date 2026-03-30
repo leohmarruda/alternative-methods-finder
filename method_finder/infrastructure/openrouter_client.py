@@ -11,9 +11,15 @@ DEFAULT_MODEL = "openai/gpt-4o"
 
 _MOCK_OUTPUT_PATH = Path(__file__).resolve().parent / "mock_output.md"
 
-SYSTEM_PROMPT = """You are a specialized Bio-Informatics Assistant. Your task is to parse "Materials and Methods" sections from biomedical research papers and extract structured JSON for **in vivo** animal experiments, **ex vivo** tissue protocols, **in vitro** studies using animal-derived materials, and **in silico** methods where they appear as validation. You are an expert in the 3Rs (Replacement, Reduction, Refinement) and OECD Test Guidelines. You must respond with a single valid JSON object whose top-level keys are exactly "study_summary" and "experiments" as specified in the user instructions—no markdown outside the JSON."""
+SYSTEM_PROMPT = """You are a specialized Bio-Informatics Assistant. Your task is to interpret user input that may be either a full "Materials and Methods" excerpt **or** a short plain-language description of a study, disease area, or endpoint (e.g. a few words like "rabies diagnosis"). From that input, extract structured JSON for **in vivo** animal experiments, **ex vivo** tissue protocols, **in vitro** studies using animal-derived materials, and **in silico** methods where they appear or are plausibly relevant. You are an expert in the 3Rs (Replacement, Reduction, Refinement) and OECD Test Guidelines. Never refuse for brevity: always return valid JSON. Use null, "not stated", and empty arrays where details are missing; do not invent specific numbers, strains, or citations. You must respond with a single valid JSON object whose top-level keys are exactly "study_summary" and "experiments" as specified in the user instructions—no markdown outside the JSON."""
 
-PROTOCOL_EXTRACTOR_PROMPT_TEMPLATE = '''Please analyze the provided "Materials and Methods" text. Your goal is to (1) summarize the study for an ethics / IACUC-style reader, and (2) identify every distinct **animal experiment** or **ex vivo / in vitro validation study** (using animal-derived tissues or cells), particularly those related to General Toxicology, Carcinogenicity, Skin Irritation/Corrosion, and Eye Irritation.
+PROTOCOL_EXTRACTOR_PROMPT_TEMPLATE = '''Please analyze the user input below. It may be a full "Materials and Methods" passage **or** a short phrase or topic (e.g. "rabies diagnosis", "shampoo eye irritation"). Your goal is to (1) summarize what is known or implied for an ethics / IACUC-style reader, and (2) list every distinct **animal experiment** or **ex vivo / in vitro validation study** you can reasonably infer from the text—or, if the input is only a topic with no explicit protocol, produce **at most one** cautious placeholder experiment in domain **"Other"** with **test_description** reflecting the topic and almost all other fields **null** or **"not stated"** unless the input clearly specifies them.
+
+## Short or underspecified input
+
+- **Always** return the required JSON shape; do **not** ask for more text or apologize for lack of detail.
+- In **study_summary**, state clearly when the input was brief or topic-only, what you inferred at a high level, and that specifics were not provided.
+- Do **not** fabricate guideline numbers, n sizes, or proprietary methods; prefer sparse objects over invented detail.
 
 ## Detection scope
 
